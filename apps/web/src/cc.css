@@ -454,3 +454,10 @@
   .cc-layer.glide { transition: none; }
 }
 .cc-brand-icon { width: 32px; height: 32px; flex: 0 0 auto; image-rendering: pixelated; }
+
+/* ---------- 新手教程 ---------- */
+.cc-hint-button.on { color: var(--gold); }
+.tut-checklist h3 small { margin-left: 6px; }
+.kd-room-tutorial { align-self: center; min-width: 0; }
+.kd-room-tutorial .tut-invite { margin: 0; padding: 8px 12px; }
+.kd-tabs .tut-checklist { flex: 1; min-height: 0; overflow-y: auto; }

@@ -94,6 +94,14 @@ node scripts/spy.mjs                   # 抓包检查
 - 其他：`legalPlacements(board, type)`、`analyze(board, meeples)`（所有区域）、`meepleOptions(...)`、`finalScoring(state)`、
   `segmentsOf(type, rot)`（段下标：先道路、再城市、再农田、最后修道院，旋转不变）、`tileShape(type, rot)`。
 
+## 新手教程
+
+- 剧本 `packages/game/src/tutorial.ts`（`tutorialSteps()`，结尾几步第一次用到时由人机快进算出，缓存），单测 `tutorial.test.ts`。
+- 网页：`apps/web/src/tutorial/`（全站共用的咕噜嘎教练层，从多米诺王国复制，不改逻辑）、`TutorialMode.tsx`、`tutorialGame.ts`（提示、小贴士）。
+- 入口：首页和等候房间的邀请卡，地址带 `?tutorial` 直接打开。学完一键开练习局（对咕噜一号，可以点「提示」/ 键盘 H）。
+- 「提示」也出现在只有自己和人机的真实对局里；「第一次遇到」小贴士只在真实对局里出。
+- 走查脚本：`~/projects/qa-reports/tools/tut-carcassonne.mjs <输出目录> flow|skip|waiting|room [尺寸] [主题]`。
+
 ## 测试
 
 - `packages/game/src/engine.test.ts`：规则书第 10 节 TC1–TC14 逐条（测试名带「规则书#TCn」），第 2–9 节各有场景测试，

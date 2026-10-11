@@ -22,6 +22,9 @@ import { MapView, type Effect, type Ghost, type Spot } from "./MapView.js";
 import { GameRoomMenu, SpectateBar } from "./RoomExtras.js";
 import { socket } from "./socket.js";
 import type { Theme } from "./theme.js";
+import { Coach, TipToast } from "./tutorial/Coach.js";
+import { useFirstTimeTips } from "./tutorial/tips.js";
+import { detectTips, GAME_ID, hintFor, TIPS, type Hint } from "./tutorialGame.js";
 
 interface GameBoardProps {
   readonly room: LobbyRoomSnapshot;
@@ -44,12 +47,22 @@ interface GameBoardProps {
   readonly onWatch: (playerId: string) => void;
   /** 观战的人离开。 */
   readonly onLeave: () => void;
-  /** 教程：在牌桌上叠一层（教练框）；锁住不该点的操作。 */
-  readonly overlay?: ReactNode;
-  /** 教程：只放行这些命令（返回 false 时忽略点击）。 */
-  readonly allow?: (command: GameCommand) => boolean;
-  /** 教程 / 练习局：显示「提示」按钮时的提示文字（null 不显示）。 */
-  readonly hint?: ReactNode;
+  /** 自己在 room.members 里的 id；默认是 socket.id（新手教程里传固定值）。 */
+  readonly selfMemberId?: string;
+  /**
+   * online：真实对局（默认）；
+   * tutorial：新手教程的剧本进行中（咕噜嘎在讲，不出提示和小贴士）；
+   * practice：教程后的练习局（随时能看提示）。
+   */
+  readonly mode?: "online" | "tutorial" | "practice";
+  /** 结算框里替代「再来一局」的按钮（练习局放「结束教程」「再练一局」）。 */
+  readonly finalActions?: ReactNode;
+  /** 先不弹结算框（剧本里先讲完最后一步）。 */
+  readonly finalHidden?: boolean;
+  /** 报告「先点再确认」的当前选择：none、place:<行>,<列>,<旋转>、meeple:<段>（剧本据此挪高亮）。 */
+  readonly onSelection?: (selection: string) => void;
+  /** 点空格时自动转到能放的方向（默认开；教程里关掉，让玩家亲手转一次）。 */
+  readonly autoRotate?: boolean;
 }
 
 const ROLE_NAMES: Record<SegKind, string> = { road: "路人", city: "骑士", monastery: "修士", field: "农夫" };
@@ -130,8 +143,10 @@ function useTransient<T extends { id: number }>() {
 
 function GameBoard(props: GameBoardProps) {
   const { room, busy, error, notice, brand, connection, themeToggle, theme, chat, onCommand, onRematch, onAuto, onDissolve, watchId, onWatch, onLeave } = props;
+  const mode = props.mode ?? "online";
   const game = room.game!;
-  const member = room.members.find((candidate) => candidate.id === socket.id);
+  const selfMember = props.selfMemberId ?? socket.id;
+  const member = room.members.find((candidate) => candidate.id === selfMember);
   const spectating = !member;
   const myId = member?.playerId ?? watchId;
   const selfId = spectating ? "" : myId;
@@ -152,11 +167,7 @@ function GameBoard(props: GameBoardProps) {
   );
   const firstVersion = useRef(game.version);
   const shownNotice = game.version === firstVersion.current ? notice : "";
-  const allow = props.allow ?? (() => true);
-  const send = (command: GameCommand) => {
-    if (!allow(command)) return;
-    onCommand(command);
-  };
+  const send = (command: GameCommand) => onCommand(command);
 
   // 进牌桌时回到页面顶上（手机上从首页表单进来时页面是往下滚过的）
   useEffect(() => {
@@ -223,7 +234,7 @@ function GameBoard(props: GameBoardProps) {
       return;
     }
     setSel({ r, c });
-    if (!rots.includes(rot)) setRot([0, 1, 2, 3].map((i) => (rot + i) % 4).find((candidate) => rots.includes(candidate))!);
+    if (!rots.includes(rot) && props.autoRotate !== false) setRot([0, 1, 2, 3].map((i) => (rot + i) % 4).find((candidate) => rots.includes(candidate))!);
   };
   const rotate = (dir: 1 | -1 = 1) => setRot((current) => (current + dir + 4) % 4);
   const confirmPlace = () => {
@@ -290,7 +301,7 @@ function GameBoard(props: GameBoardProps) {
   const outgoingKey = outgoing ? `${outgoing.r},${outgoing.c},${outgoing.rot},${outgoing.seg ?? ""}` : "";
   const sendTimer = useRef<{ last: number; timer: number | null; key: string }>({ last: 0, timer: null, key: "" });
   useEffect(() => {
-    if (spectating || !(placing || meepleStep)) return;
+    if (spectating || mode !== "online" || !(placing || meepleStep)) return;
     const state = sendTimer.current;
     if (state.key === outgoingKey) return;
     state.key = outgoingKey;
@@ -304,6 +315,29 @@ function GameBoard(props: GameBoardProps) {
     if (wait === 0) emit();
     else state.timer = window.setTimeout(emit, wait);
   }, [outgoingKey]);
+
+  // 「先点再确认」的当前选择报给新手教程（高亮跟着挪到「旋转」「确认放置」「放X」）
+  const selection = placing && sel ? `place:${sel.r},${sel.c},${rot}` : meepleStep && seg !== null ? `meeple:${seg}` : "none";
+  useEffect(() => props.onSelection?.(selection), [selection]);
+
+  // ---------- 「提示」和小贴士 ----------
+  // 提示只在练习局，或者真实对局里其他人全是人机时才有
+  const botsOnly = room.members.every((candidate) => candidate.id === selfMember || candidate.bot);
+  const canHint = !spectating && myTurn && (mode === "practice" || (mode === "online" && botsOnly));
+  const [hint, setHint] = useState<{ version: number; hint: Hint } | null>(null);
+  const shownHint = hint && hint.version === game.version && canHint ? hint.hint : null;
+  const toggleHint = () => setHint((current) => (current && current.version === game.version ? null : { version: game.version, hint: hintFor(game, myId) }));
+  useEffect(() => {
+    if (!canHint) return;
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (event.key === "h" || event.key === "H") toggleHint();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canHint, game.version]);
+  const tips = useFirstTimeTips(GAME_ID, game.version, () => detectTips(game, myId), TIPS, mode === "online" && !spectating);
 
   // ---------- 特效、日志、镜头 ----------
   const [effects, addEffect] = useTransient<Effect>();
@@ -399,7 +433,8 @@ function GameBoard(props: GameBoardProps) {
 
   const deckLeft = game.deckCount ?? game.deck.length;
   const showTimer = secondsLeft !== null && !finished && actor !== undefined && !memberOf(actor.id)?.bot && !memberOf(actor.id)?.auto && memberOf(actor.id)?.connected !== false;
-  const sideTabs = useSideTabs(room);
+  // 新手教程里「聊天」那一栏放教程进度，剧本进行中默认打开它
+  const sideTabs = useSideTabs(room, mode === "tutorial" ? "chat" : "log");
   const lastColor = lastPos && game.lastPlaced ? (() => {
     // 刚放下的那块：放它的人是谁（放地块时 currentPlayer 还是他；换人后是上一位）
     const placer = game.step === "meeple" ? game.players[game.currentPlayer] : game.players[(game.currentPlayer + game.players.length - 1) % game.players.length];
@@ -471,11 +506,11 @@ function GameBoard(props: GameBoardProps) {
               </button>
             </>
           )}
+          {canHint && <button className={shownHint ? "quiet-button cc-hint-button on" : "quiet-button cc-hint-button"} type="button" onClick={toggleHint} title="提示（H）" data-tutorial="hint">提示</button>}
           {autoPlaying && <button className="primary-button cc-auto-cancel" type="button" onClick={() => onAuto(false)}>取消托管</button>}
           {!placing && !meepleStep && !autoPlaying && <span className="cc-wait">{actor ? `等 ${actor.name}` : ""}</span>}
         </div>
       )}
-      {props.hint}
     </section>
   );
 
@@ -499,7 +534,7 @@ function GameBoard(props: GameBoardProps) {
       <div className="kd-tab-bar" role="tablist">
         <button type="button" role="tab" aria-selected={sideTabs.tab === "log"} className={sideTabs.tab === "log" ? "active" : ""} onClick={() => sideTabs.setTab("log")}>得分记录</button>
         <button type="button" role="tab" aria-selected={sideTabs.tab === "chat"} className={sideTabs.tab === "chat" ? "active" : ""} onClick={() => sideTabs.setTab("chat")} data-tutorial="chat-tab">
-          聊天{sideTabs.unread > 0 && <em>{sideTabs.unread}</em>}
+          {mode === "online" ? "聊天" : "教程"}{sideTabs.unread > 0 && <em>{sideTabs.unread}</em>}
         </button>
       </div>
       {sideTabs.tab === "log" ? <HistoryLog game={game} nameOf={nameOf} /> : <div className="kd-chat">{chat}</div>}
@@ -526,7 +561,7 @@ function GameBoard(props: GameBoardProps) {
           <GameRoomMenu room={room} />
           {spectating && <button className="quiet-button" type="button" onClick={onLeave}>离开观战</button>}
           {isHost && <button className="quiet-button danger" type="button" onClick={onDissolve}>解散</button>}
-          {!spectating && !finished && !autoPlaying && !screen.mobile && <button className="quiet-button" type="button" onClick={() => onAuto(true)} title="让人机替你走，随时可以取消">托管</button>}
+          {!spectating && !finished && !autoPlaying && !screen.mobile && mode === "online" && <button className="quiet-button" type="button" onClick={() => onAuto(true)} title="让人机替你走，随时可以取消">托管</button>}
           {connection}
         </div>
       </header>
@@ -583,14 +618,28 @@ function GameBoard(props: GameBoardProps) {
           {!screen.mobile && hand}
           {players}
           {tabs}
-          {screen.mobile && !spectating && !finished && !autoPlaying && (
+          {screen.mobile && !spectating && !finished && !autoPlaying && mode === "online" && (
             <button className="quiet-button cc-mobile-auto" type="button" onClick={() => onAuto(true)}>托管（让人机替我走）</button>
           )}
         </aside>
       </div>
-      {props.overlay}
-      {finished && finalDone && <FinalDialog game={game} room={room} myId={selfId} spectating={spectating} nameOf={nameOf} onRematch={onRematch} onLeave={onLeave} />}
-      {finished && !finalDone && (
+      {finished && finalDone && !props.finalHidden && <FinalDialog game={game} room={room} myId={selfId} selfMember={selfMember} spectating={spectating} nameOf={nameOf} onRematch={onRematch} onLeave={onLeave} actions={props.finalActions} />}
+      {shownHint && (
+        <Coach
+          bubble
+          view={{
+            key: `hint-${game.version}`,
+            say: shownHint.say,
+            ...(shownHint.note ? { note: shownHint.note } : {}),
+            anchor: shownHint.anchor,
+            focus: false,
+            face: "think",
+            actions: <button className="quiet-button" type="button" onClick={() => setHint(null)}>知道了</button>,
+          }}
+        />
+      )}
+      {tips.tip && <TipToast tip={tips.tip} onClose={tips.dismiss} onNever={tips.never} />}
+      {finished && !finalDone && !props.finalHidden && (
         <button className="primary-button kd-show-final" type="button" onClick={() => setFinalDone(true)}>跳过，看结算</button>
       )}
     </div>
@@ -598,8 +647,8 @@ function GameBoard(props: GameBoardProps) {
 }
 
 /** 侧栏的「得分记录 / 聊天」切换和未读数。 */
-function useSideTabs(room: LobbyRoomSnapshot) {
-  const [tab, setTab] = useState<"log" | "chat">("log");
+function useSideTabs(room: LobbyRoomSnapshot, initial: "log" | "chat" = "log") {
+  const [tab, setTab] = useState<"log" | "chat">(initial);
   const [seen, setSeen] = useState(room.chat.length);
   const unread = tab === "chat" ? 0 : Math.max(0, room.chat.length - seen);
   useEffect(() => {
@@ -659,17 +708,20 @@ function PlayerRow({ player, you, member, active, winner }: { player: Player; yo
 
 // ---------- 终局 ----------
 
-function FinalDialog({ game, room, myId, spectating, nameOf, onRematch, onLeave }: {
+function FinalDialog({ game, room, myId, selfMember, spectating, nameOf, onRematch, onLeave, actions }: {
   game: GameState;
   room: LobbyRoomSnapshot;
   myId: string;
+  selfMember: string | undefined;
+  /** 替代「再来一局」那一栏的按钮（练习局）。 */
+  actions?: ReactNode;
   spectating: boolean;
   nameOf: (id: string) => string;
   onRematch: (accept: boolean) => void;
   onLeave: () => void;
 }) {
   const result = game.finalResult!;
-  const accepted = room.rematch?.acceptedIds.includes(socket.id ?? "") ?? false;
+  const accepted = room.rematch?.acceptedIds.includes(selfMember ?? "") ?? false;
   const scores = [...result.scores].sort((a, b) => b.total - a.total);
   const [hidden, setHidden] = useState(false);
   if (hidden) {
@@ -705,7 +757,14 @@ function FinalDialog({ game, room, myId, spectating, nameOf, onRematch, onLeave 
             );
           })}
         </ol>
-        {spectating ? (
+        {actions ? (
+          <div className="kd-rematch">
+            <div className="gm-panel-actions">
+              <button className="quiet-button" type="button" onClick={() => setHidden(true)}>看地图</button>
+              {actions}
+            </div>
+          </div>
+        ) : spectating ? (
           <div className="kd-rematch">
             <span>{room.rematch ? `等玩家决定要不要再来一局（${room.rematch.acceptedIds.length}/${room.members.length} 人同意）` : "对局结束"}</span>
             <div className="gm-panel-actions">

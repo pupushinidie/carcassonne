@@ -67,3 +67,4 @@ export type {
   VoiceSignal,
 } from "./roomTypes.js";
 export * from "./scenes.js";
+export * from "./tutorial.js";
