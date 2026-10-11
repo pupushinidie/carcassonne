@@ -1,45 +1,47 @@
-import type { PlayerColor, Terrain } from "@carcassonne/game";
+import type { PlayerColor } from "@carcassonne/game";
 
 /**
- * 像素美术的地址。图片放在 public/art 下（PixelLab 生成，art/export.py 导出）。
- * 图片地址固定；换图后不会被浏览器缓存挡住，靠服务器给这些文件加 Cache-Control: no-cache。
- *
- * 地形格原图 32×32，只按整数倍显示（32 / 64 / 96 / 128）；同一种地形有几张变体，按骨牌编号挑，
- * 王国里同一种地形不会一模一样地重复。皇冠是代码画的小图标（数量要准），叠在格子左上角。
+ * 像素美术的地址。图片放在 public/art 下（美术 agent 用 PixelLab 做，见 art/spec.md），只按整数倍显示，
+ * 加 image-rendering: pixelated。地块每个旋转方向单独一张图（部件和光影永远正着），**直接换图，不用 CSS 旋转**。
  */
 const ROOT = `${import.meta.env.BASE_URL}art/`;
 
-/** 每种地形有几张变体（和 public/art/terrain 里的文件对应）。 */
-export const TERRAIN_VARIANTS: Record<Terrain, number> = { W: 3, F: 3, L: 3, G: 3, S: 3, M: 3 };
-
-/** 地形原图边长。 */
-export const TILE_PX = 32;
-
-/** 第 n 张骨牌的哪一端（0 = A 端，1 = B 端）用哪张变体：固定下来，刷新后也一样。px 是用哪套原图（32 或 16）。 */
-export function terrainArt(terrain: Terrain, n: number, end: number, px: 32 | 16 = 32): string {
-  const count = TERRAIN_VARIANTS[terrain];
-  const variant = (n * 7 + end * 3) % count;
-  return `${ROOT}terrain${px === 16 ? "16" : ""}/${terrain}-${variant}.png`;
-}
+/** 地块原图边长：64（tiles）和 32（tiles32，格子 ≤ 48px 时用）。 */
+export const TILE_ART = 64;
 
 export const art = {
-  /** 皇冠：9×8 原图，按格子的倍数放大。 */
-  crown: `${ROOT}ui/crown.png`,
-  castle: (color: PlayerColor, px: 32 | 16 = 32) => `${ROOT}${px === 16 ? "terrain16" : "terrain"}/castle-${color}.png`,
-  king: (color: PlayerColor) => `${ROOT}ui/king-${color}.png`,
-  sceneNight: `${ROOT}ui/scene-night.png`,
-  sceneDay: `${ROOT}ui/scene-day.png`,
+  /** 地块：r = 顺时针转了几次。px 选原图（64 或 32）。 */
+  tile: (type: string, rot: number, px: 64 | 32 = 64) => `${ROOT}${px === 32 ? "tiles32" : "tiles"}/tile-${type}-${rot}.png`,
+  tileBack: `${ROOT}tiles/tile-back.png`,
+  /** 小人：站着（路人/骑士/修士）或躺着（农夫），24×24，图中心对准落点；small 是 12×12 版。 */
+  meeple: (color: PlayerColor, lying = false, small = false) => `${ROOT}meeple/${lying ? "lie" : "stand"}-${color}${small ? "-12" : ""}.png`,
+  /** 放小人动画：24×32 × 6 帧横排，每帧 (12,20) 对准落点，每帧 70ms，播一次。 */
+  meepleDrop: (color: PlayerColor) => `${ROOT}meeple/drop-${color}.png`,
+  startFlag: `${ROOT}ui/start-flag.png`,
+  startFlagWave: `${ROOT}ui/start-flag-wave.png`,
+  slotOk: `${ROOT}ui/slot-ok.png`,
+  slotBad: `${ROOT}ui/slot-bad.png`,
+  spot: `${ROOT}ui/spot.png`,
+  spotPulse: `${ROOT}ui/spot-pulse.png`,
+  fxPlace: `${ROOT}fx/place.png`,
+  fxScore: `${ROOT}fx/score.png`,
+  sparkle: `${ROOT}fx/sparkle.png`,
+  tableDay: `${ROOT}bg/table-day.png`,
+  tableNight: `${ROOT}bg/table-night.png`,
+  wreath: `${ROOT}ui/result-wreath.png`,
+  icon: `${ROOT}ui/icon.png`,
 };
 
-/** 玩家颜色（城堡、国王、名字前的小方块）。 */
+/** 玩家颜色（小人、名牌、高亮），和美术规格一致。 */
 export const PLAYER_HEX: Record<PlayerColor, string> = {
-  pink: "#e46aa4",
-  yellow: "#f0c43c",
-  green: "#5cbf5a",
-  blue: "#4d8fe0",
+  red: "#e0473c",
+  blue: "#3b74e0",
+  purple: "#9b55d6",
+  white: "#f3efe6",
+  black: "#2c2c36",
 };
 
-/** 场景图（512×288）按整数倍放大铺满一块区域需要的尺寸（CSS background-size）。 */
+/** 石桌图（512×288）按整数倍放大铺满一块区域需要的尺寸（CSS background-size）。 */
 export function coverSize(width: number, height: number): string {
   const scale = Math.max(1, Math.ceil(Math.max(width / 512, height / 288)));
   return `${512 * scale}px ${288 * scale}px`;

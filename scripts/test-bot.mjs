@@ -3,17 +3,18 @@
 //   node scripts/test-bot.mjs join <房间码> [昵称]   → 以一个机器人身份加入别人的房间
 // 机器人轮到自己时随机选一个合法行动（直接调 @carcassonne/game 的 legalActions）；BOT_SMART=1 时用人机的走法。
 // 环境变量 BOT_DELAY_MS 控制每步的思考时间（默认 1500），BOT_IDLE=1 时只挂着不动（等超时自动行动）。
-// 建房时的变体：KD_MIGHTY=1（2 人 7×7）、KD_MIDDLE=1（中央王国）、KD_HARMONY=1（和谐）。
+// 建房时的规则：NO_FARMERS=1 关掉农夫（默认开）。REMATCH=1 时结束后同意再来一局、接着打（默认打完退出）。
 import { io } from "socket.io-client";
 import { botCommand, legalActions } from "../packages/game/dist/index.js";
 
-const URL = process.env.SERVER_URL ?? "http://localhost:3014";
+const URL = process.env.SERVER_URL ?? `http://localhost:${process.env.SERVER_PORT ?? 3025}`;
 const PATH = process.env.SOCKET_PATH ?? "/socket.io";
 const DELAY = Number(process.env.BOT_DELAY_MS ?? 1500);
 const IDLE = process.env.BOT_IDLE === "1";
 const SMART = process.env.BOT_SMART === "1";
-const NAMES = ["麦田", "森林", "湖泊", "草地", "沼泽", "矿山", "城堡"];
-const OPTIONS = { mighty: process.env.KD_MIGHTY === "1", middleKingdom: process.env.KD_MIDDLE === "1", harmony: process.env.KD_HARMONY === "1" };
+const NAMES = ["城堡", "道路", "草地", "修道院", "农夫", "骑士", "路口"];
+const OPTIONS = { farmers: process.env.NO_FARMERS !== "1" };
+const REMATCH = process.env.REMATCH === "1";
 
 function bot(name, onRoom) {
   const socket = io(URL, { path: PATH, transports: ["websocket"] });
@@ -49,8 +50,15 @@ function bot(name, onRoom) {
     const game = room.game;
     if (game?.phase === "finished") {
       const scores = game.finalResult?.scores.map((s) => `${s.player.slice(0, 2)}:${s.total}`).join(" ") ?? "";
+      if (room.rematch && REMATCH) {
+        if (!room.rematch.acceptedIds.includes(socket.id)) {
+          console.log(name, "游戏结束，得分", scores, "→ 同意再来一局");
+          void emit("room:rematch", true);
+        }
+        return;
+      }
       console.log(name, "游戏结束，得分", scores);
-      setTimeout(() => process.exit(0), 200);
+      if (!REMATCH) setTimeout(() => process.exit(0), 200);
       return;
     }
     void tick();

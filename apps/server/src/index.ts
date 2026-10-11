@@ -73,10 +73,10 @@ const REMATCH_TIMEOUT_MS = Number(process.env.REMATCH_TIMEOUT_MS ?? 60_000);
 const ADMIN_RETRY_DELAY_MS = 2_000;
 const VOICE_SIGNAL_MAX_LENGTH = 20_000;
 const MAX_SPECTATORS = 20;
-/** 每一步的计时（毫秒）；默认选牌 45 秒、放置 90 秒，测试时可以用环境变量统一缩短。 */
+/** 每一步的计时（毫秒）；默认放地块 90 秒、放小人 30 秒，测试时可以用环境变量统一缩短。 */
 const TURN_MS_OVERRIDE = process.env.TURN_MS ? Number(process.env.TURN_MS) : undefined;
 /** 人机的名字，按顺序取第一个没人用的。 */
-const BOT_NAMES = ["咕噜一号", "咕噜二号", "咕噜三号"];
+const BOT_NAMES = ["咕噜一号", "咕噜二号", "咕噜三号", "咕噜四号"];
 /** 人机每一步的停顿乘上这个倍数；测试时设成 0 让人机立刻行动。 */
 const BOT_DELAY_SCALE = Number(process.env.BOT_DELAY_SCALE ?? 1);
 /** 离线的人轮到时先等这么久再由人机代打（刷新页面、短暂断线的人来得及回来）。 */
@@ -89,6 +89,9 @@ const TURN_CREDENTIAL_TTL_SECONDS = 24 * 60 * 60;
 const rooms = new Map<string, RoomState>();
 const socketRooms = new Map<string, string>();
 const roomChatTimes = new Map<string, number>();
+/** 试放预览的节流：每个连接上次转发的时间。 */
+const hoverTimes = new Map<string, number>();
+const HOVER_THROTTLE_MS = 100;
 const adminFailureTimes = new Map<string, number>();
 
 export const httpServer = createServer((request, response) => {
@@ -160,7 +163,7 @@ function normalizeCode(value: unknown): string | null {
 function normalizeOptions(value: unknown, base: GameOptions): GameOptions {
   const input = (typeof value === "object" && value !== null ? value : {}) as Partial<Record<keyof GameOptions, unknown>>;
   const pick = (name: keyof GameOptions) => (typeof input[name] === "boolean" ? (input[name] as boolean) : base[name]);
-  return { middleKingdom: pick("middleKingdom"), harmony: pick("harmony"), mighty: pick("mighty") };
+  return { farmers: pick("farmers") };
 }
 
 function isCapacity(value: unknown): value is Capacity {
@@ -191,7 +194,7 @@ function snapshot(room: RoomState, viewerId: string): LobbyRoomSnapshot {
   };
 }
 
-/** 观战的人看到的对局：牌堆顺序、移出的骨牌、种子去掉，别人提前放好的位置也看不到（和对手看到的一样）。 */
+/** 观战的人看到的对局：牌堆顺序、种子、动作序列去掉（和玩家看到的一样）。 */
 function spectatorGame(room: RoomState): GameState {
   return redactGameForViewer(room.game!, "");
 }
@@ -433,21 +436,21 @@ function setTurnDeadline(room: RoomState, deadline: number, key: string): void {
 }
 
 /**
- * 这一步的标识：变了就重新计时（真人）或重新安排人机。只看 game.turn（换了行动的国王或步骤才变），
- * 别人提前放骨牌不会重置正在行动的人的倒计时。
+ * 这一步的标识：变了就重新计时（真人）或重新安排人机。只看 game.turn（换人或换步骤才变），
+ * 别人发来的试放预览、聊天都不会重置倒计时。
  */
 function turnKey(game: GameState): string {
   return `${game.turn}`;
 }
 
-/** 这一步的时限：选牌 45 秒，放置 90 秒（规则书 9.4）。 */
+/** 这一步的时限：放地块 90 秒，放小人 30 秒（规则书 9.4）。 */
 function stepMs(game: GameState): number {
-  return TURN_MS_OVERRIDE ?? (game.step === "pick" ? game.config.pickTimeoutSec : game.config.placeTimeoutSec) * 1000;
+  return TURN_MS_OVERRIDE ?? (game.step === "meeple" ? game.config.meepleTimeoutSec : game.config.placeTimeoutSec) * 1000;
 }
 
 /**
  * 每次对局变化、有人掉线 / 回来、托管开关后重新安排：
- * - 真人：每一步（game.turn）开始时限时（选牌 45 秒、放置 90 秒）；同一步里不重新计时。
+ * - 真人：每一步（game.turn）开始时限时（放地块 90 秒、放小人 30 秒）；同一步里不重新计时。
  * - 人机（人机座位、托管、离线的人）：停顿一下（见 botDelay）再行动，没有倒计时。
  */
 function updateTurnTimer(room: RoomState): void {
@@ -472,14 +475,18 @@ function updateTurnTimer(room: RoomState): void {
   setTurnDeadline(room, Date.now() + stepMs(game), key);
 }
 
-/** 人机每一步前停多久（毫秒，再乘 BOT_DELAY_SCALE）：让大家看清它把骨牌放在哪、选了哪张。 */
+/**
+ * 人机每一步前停多久（毫秒，再乘 BOT_DELAY_SCALE）：让真人看清它抽到什么、放在哪。
+ * 放地块前停约 1.6 秒（大家先看清抽到的地块）；放下以后再停约 1.8 秒才决定小人，
+ * 这段时间界面把镜头移过去、高亮这块地块。刚有区域结算时多停一会儿，让得分动画播完。
+ */
 function botDelay(room: RoomState, game: GameState, playerId: string): number {
   const jitter = 400 * Math.random();
-  // 刚翻出新的一排：多停一会儿让大家看清
-  const newRound = game.events.some((event) => event.type === "RoundStarted");
+  const scored = game.events.some((event) => event.type === "Scored" || event.type === "TileRemoved");
+  const base = game.step === "meeple" ? 1800 : scored ? 2400 : 1600;
   const member = room.members.find((candidate) => candidate.playerId === playerId);
   const offline = member !== undefined && !member.bot && !member.connected;
-  return Math.max((newRound ? 2400 : game.step === "place" ? 1500 : 1100) + jitter, offline ? OFFLINE_GRACE_MS : 0);
+  return Math.max(base + jitter, offline ? OFFLINE_GRACE_MS : 0);
 }
 
 function runBot(room: RoomState, key: string): void {
@@ -976,6 +983,26 @@ io.on("connection", (socket) => {
     }
   });
 
+  // 当前玩家拿着地块试位置：只同步位置、旋转（和预选的段），每个连接 100 毫秒最多转发一次，转发给房间里其他人。
+  socket.on("game:hover", (payload) => {
+    const room = findRoomForSocket(socket.id);
+    const game = room?.game;
+    if (!room || room.status !== "playing" || !game || game.phase === "finished" || isSpectator(room, socket.id)) return;
+    const playerId = seatOf(room, socket.id);
+    if (game.players[game.currentPlayer]?.id !== playerId) return;
+    const now = Date.now();
+    if (now - (hoverTimes.get(socket.id) ?? 0) < HOVER_THROTTLE_MS && payload !== null) return;
+    hoverTimes.set(socket.id, now);
+    let hover: { r: number; c: number; rot: number; seg?: number } | null = null;
+    if (payload && typeof payload === "object") {
+      const { r, c, rot, seg } = payload as { r: unknown; c: unknown; rot: unknown; seg?: unknown };
+      if (![r, c, rot].every((value) => Number.isInteger(value) && Math.abs(value as number) <= 200)) return;
+      hover = { r: r as number, c: c as number, rot: ((rot as number) % 4 + 4) % 4 };
+      if (Number.isInteger(seg) && (seg as number) >= 0 && (seg as number) < 12) hover.seg = seg as number;
+    }
+    socket.to(room.code).emit("game:hover", { playerId, version: game.version, hover });
+  });
+
   socket.on("room:rematch", (accept, ack) => {
     const room = findRoomForSocket(socket.id);
     if (!room?.rematch || !room.members.some((member) => member.id === socket.id)) {
@@ -1183,6 +1210,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     roomChatTimes.delete(socket.id);
+    hoverTimes.delete(socket.id);
     adminFailureTimes.delete(socket.id);
     removeWaitingMember(socket.id);
   });
