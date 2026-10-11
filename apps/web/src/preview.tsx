@@ -72,8 +72,8 @@ function sequence(): GameState[] {
   };
   run({ type: "PLACE_TILE", r: -1, c: 0, rot: 2 });
   run({ type: "PLACE_MEEPLE", seg: 0 });
-  // 乙：放一块把起始地块西边接上，下一位甲抽到 C 放不下被移出
-  run({ type: "PLACE_TILE", r: 0, c: -1, rot: 1 });
+  // 甲封城后乙抽到 C（四面城）放不下被移出、改抽 V；乙把 V 接在起始地块西边
+  run({ type: "PLACE_TILE", r: 0, c: -1, rot: 2 });
   run({ type: "SKIP_MEEPLE" });
   return states;
 }
@@ -89,8 +89,11 @@ function initial(): GameState[] {
       return [scene("others", n)];
     case "pick":
       return [scene("meeple", n)];
-    default:
-      return [scene(name, n)];
+    default: {
+      // 先显示一帧「之前」（没有事件、版本少 1），再换成场景本身，这样得分、超时、移出这些提示和特效会播
+      const s = scene(name, n);
+      return [{ ...s, version: s.version - 1, events: [] }, s];
+    }
   }
 }
 
@@ -100,7 +103,7 @@ function Preview() {
   const [index, setIndex] = React.useState(0);
   React.useEffect(() => {
     if (states.length <= 1) return;
-    const timer = window.setInterval(() => setIndex((i) => Math.min(states.length - 1, i + 1)), 1600);
+    const timer = window.setInterval(() => setIndex((i) => Math.min(states.length - 1, i + 1)), states.length === 2 ? 300 : 1600);
     return () => window.clearInterval(timer);
   }, [states]);
   const game = states[index]!;

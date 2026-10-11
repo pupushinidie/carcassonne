@@ -158,6 +158,11 @@ function GameBoard(props: GameBoardProps) {
     onCommand(command);
   };
 
+  // 进牌桌时回到页面顶上（手机上从首页表单进来时页面是往下滚过的）
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // 页面在后台时，轮到自己就在标题上提醒
   useEffect(() => {
     const base = "卡卡颂 · 在线对战";
@@ -323,6 +328,8 @@ function GameBoard(props: GameBoardProps) {
         record.returned.forEach((meeple, index) => addFlyer((id) => ({ id, meeple }), 900, 350 + index * 90));
       } else if (event.type === "TileRemoved") {
         flash(`${nameOf(event.player)}抽到的这块哪里都放不下，已移出本局，重新抽一块`, "info", event.tile);
+      } else if (event.type === "TurnTimedOut") {
+        flash(event.player === selfId ? "你超时了，已经替你走了一步；连续超时 2 次会转托管" : `${nameOf(event.player)}超时，已经替他走了一步`, event.player === selfId ? "warn" : "info");
       } else if (event.type === "GameEnded") {
         finalRecords = event.result.records;
       }
@@ -464,7 +471,7 @@ function GameBoard(props: GameBoardProps) {
               </button>
             </>
           )}
-          {autoPlaying && <button className="primary-button" type="button" onClick={() => onAuto(false)}>取消托管</button>}
+          {autoPlaying && <button className="primary-button cc-auto-cancel" type="button" onClick={() => onAuto(false)}>取消托管</button>}
           {!placing && !meepleStep && !autoPlaying && <span className="cc-wait">{actor ? `等 ${actor.name}` : ""}</span>}
         </div>
       )}
@@ -565,6 +572,7 @@ function GameBoard(props: GameBoardProps) {
             coarse={screen.coarse || screen.mobile}
             flyers={flyers}
             table={theme === "day" ? art.tableDay : art.tableNight}
+            {...(finished ? { fitKey: "end" } : {})}
           >
             {!screen.mobile && <span className="cc-map-hint">{detail}</span>}
           </MapView>

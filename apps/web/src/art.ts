@@ -7,18 +7,18 @@ import type { PlayerColor } from "@carcassonne/game";
 const ROOT = `${import.meta.env.BASE_URL}art/`;
 
 /**
- * 地图格子的几档大小（px）和每档用哪套原图、放大几倍：16（tiles16，PIL 从 32 缩出来，手机全图用）、
+ * 地图格子的几档大小（px）和每档用哪套原图、放大几倍：16（tiles16，PIL 从 32 缩出来，手机全图用）、48（tiles48，PIL 从 64 缩）、
  * 32 / 96（tiles32 的 1× / 3×）、64 / 128 / 192（tiles 的 1× / 2× / 3×）。小人：64 档以上用 24px 图 ×(格/64)，
  * 其余用 12px 图 ×(格/32)。
  */
-export const CELL_LEVELS = [16, 32, 64, 96, 128, 192] as const;
-export function tileArtFor(cell: number): 64 | 32 | 16 {
-  return cell <= 16 ? 16 : cell === 32 || cell === 96 ? 32 : 64;
+export const CELL_LEVELS = [16, 32, 48, 64, 96, 128, 192] as const;
+export function tileArtFor(cell: number): 64 | 48 | 32 | 16 {
+  return cell <= 16 ? 16 : cell === 48 ? 48 : cell === 32 || cell === 96 ? 32 : 64;
 }
 
 export const art = {
   /** 地块：r = 顺时针转了几次。px 选原图（64 或 32）。 */
-  tile: (type: string, rot: number, px: 64 | 32 | 16 = 64) => `${ROOT}${px === 16 ? "tiles16" : px === 32 ? "tiles32" : "tiles"}/tile-${type}-${rot}.png`,
+  tile: (type: string, rot: number, px: 64 | 48 | 32 | 16 = 64) => `${ROOT}${px === 16 ? "tiles16" : px === 32 ? "tiles32" : px === 48 ? "tiles48" : "tiles"}/tile-${type}-${rot}.png`,
   tileBack: `${ROOT}tiles/tile-back.png`,
   /** 小人：站着（路人/骑士/修士）或躺着（农夫），24×24，图中心对准落点；small 是 12×12 版。 */
   meeple: (color: PlayerColor, lying = false, small = false) => `${ROOT}meeple/${lying ? "lie" : "stand"}-${color}${small ? "-12" : ""}.png`,

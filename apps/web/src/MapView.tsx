@@ -65,6 +65,8 @@ export interface MapViewProps {
   readonly flyers: readonly { readonly id: number; readonly meeple: Meeple }[];
   /** 石桌背景图。 */
   readonly table: string;
+  /** 变了就「全图」一次（终局时看整张图）。 */
+  readonly fitKey?: string;
 }
 
 interface Camera {
@@ -143,6 +145,10 @@ export function MapView(props: MapViewProps) {
     });
     setGlide(false);
   }, [size]);
+
+  useEffect(() => {
+    if (props.fitKey && size.width > 0) fitAll();
+  }, [props.fitKey, size.width > 0]);
 
   // 新地块放下：不在视野中间区域就移过去
   useEffect(() => {
@@ -269,7 +275,9 @@ export function MapView(props: MapViewProps) {
   const ty = Math.round(size.height / 2 - (camera?.cy ?? 0) * cell);
   const tilePx = tileArtFor(cell);
   const big = cell >= 64;
-  const meepleSize = big ? 24 * (cell / 64) : 12 * Math.max(1, Math.floor(cell / 32));
+  // 小人：64 档以上 24px 图 ×(格/64)；48 档 24px 图 1×；32/16 档 12px 图 1×；96 档 12px 图 3×
+  const meepleSize = big ? (cell === 96 ? 36 : 24 * (cell / 64)) : cell === 48 ? 24 : 12;
+  const meepleSmall = !(big && cell !== 96) && cell !== 48;
   const spotSize = 16 * Math.max(1, Math.floor(cell / 64));
   const at = (pos: string) => parseKey(pos);
   const box = (r: number, c: number): CSSProperties => ({ left: c * cell, top: r * cell, width: cell, height: cell });
@@ -285,8 +293,8 @@ export function MapView(props: MapViewProps) {
     const color = props.colorOf(meeple.player);
     const lying = meeple.role === "farmer";
     const id = `${meeple.pos}:${meeple.seg}`;
-    if (big && !lying && props.freshMeeples.has(id)) {
-      const scale = cell / 64;
+    if (!meepleSmall && !lying && props.freshMeeples.has(id)) {
+      const scale = meepleSize / 24;
       return (
         <span
           key={id}
@@ -299,7 +307,7 @@ export function MapView(props: MapViewProps) {
       <img
         key={id + index}
         className={["cc-meeple", lying ? "lying" : ""].join(" ")}
-        src={art.meeple(color, lying, !big)}
+        src={art.meeple(color, lying, meepleSmall)}
         alt=""
         style={{ left: x - meepleSize / 2, top: y - meepleSize / 2, width: meepleSize, height: meepleSize }}
       />
@@ -392,7 +400,7 @@ export function MapView(props: MapViewProps) {
             const { r, c } = at(g.pos);
             const x = (c + g.x) * cell;
             const y = (r + g.y) * cell;
-            return <img className="cc-meeple ghosted" src={art.meeple(g.color, g.lying, !big)} alt="" style={{ left: x - meepleSize / 2, top: y - meepleSize / 2, width: meepleSize, height: meepleSize }} />;
+            return <img className="cc-meeple ghosted" src={art.meeple(g.color, g.lying, meepleSmall)} alt="" style={{ left: x - meepleSize / 2, top: y - meepleSize / 2, width: meepleSize, height: meepleSize }} />;
           })()}
           {effects.map((effect) => {
             if (effect.kind !== "score") return null;
