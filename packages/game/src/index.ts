@@ -41,7 +41,8 @@ export {
 } from "./map.js";
 export type { Analysis, TileShape } from "./map.js";
 export { TILE_DEFS } from "./tileData.js";
-export { botCommand } from "./bot.js";
+export { botCommand, botDecision, DEFAULT_BOT_PARAMS } from "./bot.js";
+export type { BotDecision, BotParams } from "./bot.js";
 export { createRng } from "./rng.js";
 export type { Rng } from "./rng.js";
 export { CAPACITY_OPTIONS, DEFAULT_ROOM_ACCESS } from "./roomTypes.js";
