@@ -397,11 +397,11 @@ function App() {
   );
 }
 
-/** 首页主图：石桌上拼好的一小片地图。 */
+/** 首页主图：石桌上拼好的一小片地图（接缝都对得上，用引擎搜出来的）。 */
 const HERO_TILES: { r: number; c: number; t: string; rot: number }[] = [
-  { r: 0, c: 0, t: "R", rot: 2 }, { r: 0, c: 1, t: "E", rot: 2 }, { r: 0, c: 2, t: "B", rot: 0 }, { r: 0, c: 3, t: "V", rot: 1 },
-  { r: 1, c: 0, t: "N", rot: 1 }, { r: 1, c: 1, t: "D", rot: 0 }, { r: 1, c: 2, t: "U", rot: 1 }, { r: 1, c: 3, t: "K", rot: 1 },
-  { r: 2, c: 0, t: "V", rot: 0 }, { r: 2, c: 1, t: "W", rot: 0 }, { r: 2, c: 2, t: "A", rot: 0 }, { r: 2, c: 3, t: "E", rot: 0 },
+  { r: 0, c: 0, t: "V", rot: 2 }, { r: 0, c: 1, t: "O", rot: 2 }, { r: 0, c: 2, t: "I", rot: 3 }, { r: 0, c: 3, t: "W", rot: 3 },
+  { r: 1, c: 0, t: "U", rot: 1 }, { r: 1, c: 1, t: "K", rot: 0 }, { r: 1, c: 2, t: "N", rot: 1 }, { r: 1, c: 3, t: "D", rot: 3 },
+  { r: 2, c: 0, t: "B", rot: 1 }, { r: 2, c: 1, t: "D", rot: 1 }, { r: 2, c: 2, t: "F", rot: 0 }, { r: 2, c: 3, t: "D", rot: 3 },
 ];
 
 function Hero() {

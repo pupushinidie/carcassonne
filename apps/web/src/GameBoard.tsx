@@ -498,7 +498,7 @@ function GameBoard(props: GameBoardProps) {
     <section className="kd-panel kd-tabs" data-tutorial="log">
       <div className="kd-tab-bar" role="tablist">
         <button type="button" role="tab" aria-selected={sideTabs.tab === "log"} className={sideTabs.tab === "log" ? "active" : ""} onClick={() => sideTabs.setTab("log")}>得分记录</button>
-        <button type="button" role="tab" aria-selected={sideTabs.tab === "chat"} className={sideTabs.tab === "chat" ? "active" : ""} onClick={() => sideTabs.setTab("chat")}>
+        <button type="button" role="tab" aria-selected={sideTabs.tab === "chat"} className={sideTabs.tab === "chat" ? "active" : ""} onClick={() => sideTabs.setTab("chat")} data-tutorial="chat-tab">
           聊天{sideTabs.unread > 0 && <em>{sideTabs.unread}</em>}
         </button>
       </div>
