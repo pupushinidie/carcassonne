@@ -1,0 +1,31 @@
+{"time": "2026-10-11 09:14:58", "name": "tex-grass-s102", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 12.6}
+{"time": "2026-10-11 09:15:01", "name": "tex-grass-s101", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 15.4}
+{"time": "2026-10-11 09:15:03", "name": "tile-back-s122", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 17.1}
+{"time": "2026-10-11 09:15:06", "name": "tile-back-s123", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 20.0}
+{"time": "2026-10-11 09:15:09", "name": "tex-grass-s103", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 23.3}
+{"time": "2026-10-11 09:15:10", "name": "tex-town-s113", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 23.9}
+{"time": "2026-10-11 09:15:15", "name": "tex-town-s111", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 29.0}
+{"time": "2026-10-11 09:15:15", "name": "tex-town-s112", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 29.0}
+{"time": "2026-10-11 09:15:16", "name": "tile-back-s121", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 30.1}
+{"time": "2026-10-11 09:16:16", "name": "bg-day-s201", "endpoint": "/create-image-pixen", "usage": {"type": "generations", "generations": 1.0}, "seconds": 60.2}
+{"time": "2026-10-11 09:17:24", "name": "meeple-stand", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 134.8, "status": "completed"}
+{"time": "2026-10-11 09:17:26", "name": "bg-day-s202", "endpoint": "/create-image-pixen", "usage": {"type": "generations", "generations": 1.0}, "seconds": 69.5}
+{"time": "2026-10-11 09:17:29", "name": "obj-house", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 151.0, "status": "completed"}
+{"time": "2026-10-11 09:17:39", "name": "ui-shield", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 144.2, "status": "completed"}
+{"time": "2026-10-11 09:17:41", "name": "meeple-lie", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 151.2, "status": "completed"}
+{"time": "2026-10-11 09:17:47", "name": "ui-flag", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 152.2, "status": "completed"}
+{"time": "2026-10-11 09:17:49", "name": "obj-well", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 163.6, "status": "completed"}
+{"time": "2026-10-11 09:17:57", "name": "cover-s811", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 16.1}
+{"time": "2026-10-11 09:18:02", "name": "obj-tower", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 178.5, "status": "completed"}
+{"time": "2026-10-11 09:18:15", "name": "cover-s812", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 27.9}
+{"time": "2026-10-11 09:18:20", "name": "obj-tree", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 199.1, "status": "completed"}
+{"time": "2026-10-11 09:18:26", "name": "bg-night-s213", "endpoint": "/create-image-pixen", "usage": {"type": "generations", "generations": 1.0}, "seconds": 47.3}
+{"time": "2026-10-11 09:18:27", "name": "bg-night-s211", "endpoint": "/create-image-pixen", "usage": {"type": "generations", "generations": 1.0}, "seconds": 61.2}
+{"time": "2026-10-11 09:18:30", "name": "bg-day-s203", "endpoint": "/create-image-pixen", "usage": {"type": "generations", "generations": 1.0}, "seconds": 66.0}
+{"time": "2026-10-11 09:18:35", "name": "bg-night-s212", "endpoint": "/create-image-pixen", "usage": {"type": "generations", "generations": 1.0}, "seconds": 66.0}
+{"time": "2026-10-11 09:18:43", "name": "obj-monastery", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 15.0}, "seconds": 237.6, "status": "completed"}
+{"time": "2026-10-11 09:21:48", "name": "cover-s813", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 238.3}
+{"time": "2026-10-11 09:23:56", "name": "ui-wreath-s703", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 27.6}
+{"time": "2026-10-11 09:23:56", "name": "ui-wreath-s702", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 28.1}
+{"time": "2026-10-11 09:24:03", "name": "ui-wreath-s701", "endpoint": "/create-image-pixflux", "usage": {"type": "generations", "generations": 1.0}, "seconds": 35.1}
+{"time": "2026-10-11 09:26:41", "name": "obj-bush", "endpoint": "/generate-image-v2", "usage": {"type": "generations", "generations": 10.0}, "seconds": 192.6, "status": "completed"}

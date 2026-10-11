@@ -1,0 +1,69 @@
+{
+ "tiles": {
+  "set": "set2",
+  "candidates": [
+   "set1",
+   "set2",
+   "set3"
+  ],
+  "why": "灰石城墙和暖砂石板地对比最清楚，红十字修道院比带框的回廊更好认；三套接缝检查都是 0 处不一致"
+ },
+ "meeple": {
+  "pick": 12,
+  "candidates": "out/r1/meeple-stand/（64 个）",
+  "why": "轮廓最干净、头和手脚比例最像小人；换 5 色后在草地/城内/道路/夜间/白天都分得清"
+ },
+ "bg-day": {
+  "pick": "out/r1/bg-day-s201.png",
+  "candidates": [
+   "out/r1/bg-day-s201.png",
+   "out/r1/bg-day-s202.png",
+   "out/r1/bg-day-s203.png"
+  ],
+  "why": "中间一大块平石板最安静，地图压在上面不花；四周青苔和小花跟地块同一套颜色"
+ },
+ "bg-night": {
+  "pick": "out/r1/bg-night-s212.png",
+  "candidates": [
+   "out/r1/bg-night-s211.png",
+   "out/r1/bg-night-s212.png",
+   "out/r1/bg-night-s213.png"
+  ],
+  "why": "中间空出一大块深色平石板，灯笼只在四角，地块最亮"
+ },
+ "tile-back": {
+  "pick": "out/r1/tile-back-s121.png",
+  "candidates": [
+   "out/r1/tile-back-s121.png",
+   "out/r1/tile-back-s122.png",
+   "out/r1/tile-back-s123.png"
+  ],
+  "why": "浅木色配绿宝石徽记，和草地同色系，缩到 32px 还是一块「背面」"
+ },
+ "start-flag": {
+  "pick": "out/r1/ui-flag/ui-flag.png",
+  "candidates": "out/r1/ui-flag/（64 个）",
+  "why": "旗杆直、旗面是纯色三角，没有图案和字"
+ },
+ "result-wreath": {
+  "pick": "out/r2/ui-wreath-s702.png",
+  "candidates": [
+   "out/r2/ui-wreath-s701.png",
+   "out/r2/ui-wreath-s702.png",
+   "out/r2/ui-wreath-s703.png"
+  ],
+  "why": "左右对称的拱形花环，中间留空给名次和分数"
+ },
+ "covers": {
+  "candidates": [
+   "out/r1/cover-s811.png",
+   "out/r1/cover-s812.png",
+   "out/r1/cover-s813.png"
+  ],
+  "recommended": "cover-2.png",
+  "why": "812：围城、城门、修道院和池塘都在，没有人物没有字；813 中间有一个很小的人形，811 偏挤"
+ },
+ "parts": {
+  "note": "地块部件（v2 候选编号）见 pick.py 的 SETS"
+ }
+}
