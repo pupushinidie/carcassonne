@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { PLAYER_COLORS } from "@carcassonne/game";
 import { CAPACITY_OPTIONS, type Capacity, type GameCommand, type GameOptions, type LobbyRoomSnapshot, type PublicRoomSummary } from "@carcassonne/game";
 import { art, PLAYER_HEX } from "./art.js";
@@ -10,6 +10,7 @@ import RoomChat from "./RoomChat.js";
 import { roomRole, RoomSettingsPanel, SeatSwitch } from "./RoomExtras.js";
 import { socket } from "./socket.js";
 import { ThemeToggle, useTheme } from "./theme.js";
+import { NO_BGM, sfx, SoundToggle, useBgm, useRoomSfx } from "./gm-sound.js";
 import { TutorialInvite } from "./tutorial/Invite.js";
 import { readTutorial } from "./tutorial/storage.js";
 import { GAME_ID } from "./tutorialGame.js";
@@ -34,7 +35,8 @@ function App() {
   const [confirmAction, confirmDialog] = useConfirm();
   // 白天 / 夜间画面：首页、等候房间、牌桌共用，顶栏按钮随时切换；和游戏中心、其他游戏共用同一个选择。
   const [theme, toggleTheme] = useTheme();
-  const themeToggle = <ThemeToggle theme={theme} onToggle={toggleTheme} />;
+  // ♪ 声音面板跟在白天/夜间按钮旁边（只在房间和教程里显示，见 gm-sound.tsx）
+  const themeToggle = <><ThemeToggle theme={theme} onToggle={toggleTheme} /><SoundToggle /></>;
   const [roomCode, setRoomCode] = useState("");
   const [room, setRoom] = useState<LobbyRoomSnapshot | null>(null);
   const [connected, setConnected] = useState(socket.connected);
@@ -63,6 +65,13 @@ function App() {
       setNotice("对局开始了，教程先停在这里。");
     }
   }, [tutorialOpen, room?.status]);
+  // 背景音乐：卡卡颂还没有曲子，房间和教程里不放音乐，但照样有 ♪ 面板（音效、语音音量）
+  useBgm(room || tutorialOpen ? NO_BGM : null);
+  // 房间里的提示音：有人进出、开局、收到别人的聊天（聊天只留最近几条，按最后一条的 id 数新消息）
+  const lastChat = room ? room.chat[room.chat.length - 1] : undefined;
+  const chatSeen = useRef<{ id: string | undefined; count: number }>({ id: undefined, count: 0 });
+  if (lastChat?.id !== chatSeen.current.id) chatSeen.current = { id: lastChat?.id, count: chatSeen.current.count + 1 };
+  useRoomSfx(room ? { members: room.members.length, playing: room.status === "playing", chatCount: chatSeen.current.count, lastChatMine: lastChat?.senderId === socket.id } : null);
 
   // 在房间里时服务端不推送在线牌桌列表；回到首页时主动拉一次最新的。
   useEffect(() => {
@@ -81,7 +90,10 @@ function App() {
     };
     const handleDisconnect = () => setConnected(false);
     const handleRoomUpdate = (snapshot: LobbyRoomSnapshot) => setRoom(snapshot);
-    const handleRoomError = (message: string) => setError(message);
+    const handleRoomError = (message: string) => {
+      sfx.error();
+      setError(message);
+    };
     const handleLobbyUpdate = (rooms: PublicRoomSummary[]) => setLobbyRooms(rooms);
     const handleRoomClosed = ({ reason }: { reason: string }) => {
       setRoom(null);
@@ -198,6 +210,7 @@ function App() {
     socket.emit("game:command", command, (response) => {
       setBusy(false);
       if (!response.ok) {
+        sfx.error();
         setError(response.error);
         return;
       }

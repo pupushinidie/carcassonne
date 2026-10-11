@@ -23,6 +23,8 @@ import { GameRoomMenu, SpectateBar } from "./RoomExtras.js";
 import { socket } from "./socket.js";
 import type { Theme } from "./theme.js";
 import { Coach, TipToast } from "./tutorial/Coach.js";
+import { useGameSfx } from "./game-sfx.js";
+import { useSfxCountdown } from "./gm-sound.js";
 import { useFirstTimeTips } from "./tutorial/tips.js";
 import { detectTips, GAME_ID, hintFor, TIPS, type Hint } from "./tutorialGame.js";
 
@@ -85,6 +87,11 @@ function spotWord([x, y]: readonly [number, number]): string {
   const v = y < 0.38 ? "上" : y > 0.62 ? "下" : "";
   const h = x < 0.38 ? "左" : x > 0.62 ? "右" : "";
   return v + h || "中";
+}
+
+/** 倒计时提示音只在有倒计时的时候响。 */
+function showTimerFor(secondsLeft: number | null, finished: boolean): number | null {
+  return finished ? null : secondsLeft;
 }
 
 function useCountdown(room: LobbyRoomSnapshot): number | null {
@@ -168,6 +175,10 @@ function GameBoard(props: GameBoardProps) {
   const firstVersion = useRef(game.version);
   const shownNotice = game.version === firstVersion.current ? notice : "";
   const send = (command: GameCommand) => onCommand(command);
+
+  // 动作音效、最后几秒倒计时提示音
+  useGameSfx(game, selfId);
+  useSfxCountdown(myTurn, showTimerFor(secondsLeft, finished));
 
   // 进牌桌时回到页面顶上（手机上从首页表单进来时页面是往下滚过的）
   useEffect(() => {
@@ -326,7 +337,17 @@ function GameBoard(props: GameBoardProps) {
   const canHint = !spectating && myTurn && (mode === "practice" || (mode === "online" && botsOnly));
   const [hint, setHint] = useState<{ version: number; hint: Hint } | null>(null);
   const shownHint = hint && hint.version === game.version && canHint ? hint.hint : null;
-  const toggleHint = () => setHint((current) => (current && current.version === game.version ? null : { version: game.version, hint: hintFor(game, myId) }));
+  const toggleHint = () => {
+    if (hint && hint.version === game.version) {
+      setHint(null);
+      return;
+    }
+    const next = hintFor(game, myId);
+    setHint({ version: game.version, hint: next });
+    // 提示指的空格可能在视野外：镜头先移过去
+    const cell = next.anchor?.match(/^cell-(-?\d+)_(-?\d+)$/);
+    if (cell) setFocus({ pos: `${cell[1]},${cell[2]}`, key: `hint-${game.version}` });
+  };
   useEffect(() => {
     if (!canHint) return;
     const onKey = (event: KeyboardEvent) => {
@@ -745,7 +766,7 @@ function FinalDialog({ game, room, myId, selfMember, spectating, nameOf, onRemat
               game.config.farmers ? `农田 ${score.farms}` : "",
             ].filter(Boolean);
             return (
-              <li key={score.player} className={winner ? "winner" : ""} style={{ "--seat": PLAYER_HEX[player.color] } as CSSProperties}>
+              <li key={score.player} className={winner ? "winner" : ""} style={{ "--seat": PLAYER_HEX[player.color] } as CSSProperties} data-tutorial={`final-row-${score.player}`}>
                 <span className="kd-rank">{winner ? "★" : rank}</span>
                 <img className="cc-player-meeple" src={art.meeple(player.color)} alt="" />
                 <span className="kd-standing-name">

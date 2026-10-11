@@ -31,7 +31,7 @@ export function hintFor(game: GameState, playerId: string): Hint {
     const then = decision.seg !== undefined && decision.seg >= 0 ? `，然后放个${ROLE_NAMES[segments[decision.seg]!.kind]}` : "";
     return {
       say: `我会放在亮着的这一格${then}。`,
-      note: `${decision.reason}。${command.rot > 0 ? `（地块要${DIR_WORD[command.rot]}，看侧栏的方向小图）` : ""}`,
+      note: `${decision.reason}。${command.rot > 0 ? `（地块要顺时针${DIR_WORD[command.rot]}：点这格后用「旋转」调）` : ""}`,
       anchor: `cell-${command.r}_${command.c}`,
     };
   }

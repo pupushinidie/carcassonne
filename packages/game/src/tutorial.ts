@@ -292,7 +292,7 @@ function endingSteps(): TutorialStep[] {
   steps.push({ kind: "watch", id: "rival-last", anchor: "map", moves: rivalMoves, say: "咕噜一号放最后一块……" });
   steps.push(
     {
-      kind: "info", id: "final", anchor: "final", face: "happy",
+      kind: "info", id: "final", anchor: `final-row-${TUTORIAL_SELF}`, face: "happy",
       say: "游戏结束！没完工的地方也算分。",
       note: "没完工的路每块 1 分、城每块 1 分加盾徽 1 分、修道院 1 分加周围块数；农夫按挨着的完工城每座 3 分。",
     },
@@ -334,6 +334,7 @@ export function anchorVisible(state: GameState, anchor: string, viewer: string):
     const [r, c] = anchor.slice(5).split("_").map(Number) as [number, number];
     return myTurn && state.step === "place" && state.drawn !== null && legalPlacements(state.board, state.drawn).some((p) => p.r === r && p.c === c);
   }
+  if (anchor.startsWith("final-row-")) return state.phase === "finished" && state.players.some((player) => player.id === anchor.slice(10));
   if (anchor.startsWith("spot-")) {
     const index = Number(anchor.slice(5));
     if (!myTurn || state.step !== "meeple" || !state.lastPlaced) return false;

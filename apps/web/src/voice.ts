@@ -1,3 +1,4 @@
+import { registerVoiceAudio, unregisterVoiceAudio } from "./gm-sound.js";
 import { useEffect, useRef, useState } from "react";
 import type { IceServerConfig, LobbyRoomSnapshot, VoiceSignal } from "@carcassonne/game";
 import { socket } from "./socket.js";
@@ -83,6 +84,7 @@ export function useVoice(room: LobbyRoomSnapshot | null): VoiceControls {
     const pc = new RTCPeerConnection({ iceServers: iceServers.current, iceTransportPolicy: FORCE_RELAY ? "relay" : "all" });
     const audio = new Audio();
     audio.autoplay = true;
+    registerVoiceAudio(audio);
     const peer: Peer = { pc, audio, pendingCandidates: [], localAdded: false };
     peers.current.set(peerId, peer);
 
@@ -121,6 +123,7 @@ export function useVoice(room: LobbyRoomSnapshot | null): VoiceControls {
     if (!peer) return;
     peer.pc.close();
     peer.audio.srcObject = null;
+    unregisterVoiceAudio(peer.audio);
     peers.current.delete(peerId);
     analysers.current.delete(peerId);
     setConnections((current) => {

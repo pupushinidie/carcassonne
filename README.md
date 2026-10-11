@@ -102,6 +102,14 @@ node scripts/spy.mjs                   # 抓包检查
 - 「提示」也出现在只有自己和人机的真实对局里；「第一次遇到」小贴士只在真实对局里出。
 - 走查脚本：`~/projects/qa-reports/tools/tut-carcassonne.mjs <输出目录> flow|skip|waiting|room [尺寸] [主题]`。
 
+## 背景音乐 / 声音
+
+- 全站同一份 `apps/web/src/gm-sound.tsx`（从花砖物语原样拷，改了要同步到所有仓库）：音乐、音效、语音三路音量，顶栏 ♪ 面板。
+- 卡卡颂还没有曲子：`useBgm(room || tutorialOpen ? NO_BGM : null)`，房间和教程里有 ♪ 面板但不放音乐。
+- 动作音效 `apps/web/src/game-sfx.ts`：地块落桌、小人放下、不放、区域完工得分和小人回手、地块被移出、超时、轮到你、终局输赢；牌桌里 `useSfxCountdown` 最后几秒提示。App.tsx 有 `useRoomSfx`（进出、开局、聊天）和出错 `sfx.error()`；voice.ts 登记对方的 `<audio>`。
+- 检查：`URL=http://localhost:5296/ NO_MUSIC=1 node ~/projects/qa-reports/tools/bgm-check.mjs`。
+- 线上大厅「写评价」悬浮窗：index.html 末尾的脚本，牌桌和教程的 `<main>` 带 `data-gc-table`。
+
 ## 测试
 
 - `packages/game/src/engine.test.ts`：规则书第 10 节 TC1–TC14 逐条（测试名带「规则书#TCn」），第 2–9 节各有场景测试，
