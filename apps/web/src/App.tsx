@@ -420,7 +420,7 @@ function Hero() {
 function Brand() {
   return (
     <a className="brand" href={import.meta.env.BASE_URL} aria-label="卡卡颂首页">
-      <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
+      <img className="cc-brand-icon" src={art.icon} alt="" aria-hidden="true" />
       <span className="brand-name">卡卡颂<span> CARCASSONNE</span></span>
     </a>
   );
