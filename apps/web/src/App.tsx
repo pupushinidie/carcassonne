@@ -10,7 +10,7 @@ import RoomChat from "./RoomChat.js";
 import { roomRole, RoomSettingsPanel, SeatSwitch } from "./RoomExtras.js";
 import { socket } from "./socket.js";
 import { ThemeToggle, useTheme } from "./theme.js";
-import { NO_BGM, sfx, SoundToggle, useBgm, useRoomSfx } from "./gm-sound.js";
+import { type BgmTrack, sfx, SoundToggle, useBgm, useRoomSfx } from "./gm-sound.js";
 import { TutorialInvite } from "./tutorial/Invite.js";
 import { readTutorial } from "./tutorial/storage.js";
 import { GAME_ID } from "./tutorialGame.js";
@@ -27,6 +27,9 @@ const CENTER_URL = import.meta.env.DEV ? `${window.location.protocol}//${window.
 function normalizeRoomCode(value: string): string {
   return value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, "").slice(0, 6);
 }
+
+// 背景音乐：进了房间（等候房间、对局、观战）和新手教程里放，首页和房间列表不放。gain / start / end 按这首曲子量（见 gm-sound.tsx）。
+const BGM: BgmTrack = { src: `${import.meta.env.BASE_URL}bgm/carcassonne.mp3`, gain: 0.88, start: 0.05, end: 153.5 };
 
 function App() {
   const [mode, setMode] = useState<EntryMode>("create");
@@ -66,7 +69,7 @@ function App() {
     }
   }, [tutorialOpen, room?.status]);
   // 背景音乐：卡卡颂还没有曲子，房间和教程里不放音乐，但照样有 ♪ 面板（音效、语音音量）
-  useBgm(room || tutorialOpen ? NO_BGM : null);
+  useBgm(room || tutorialOpen ? BGM : null);
   // 房间里的提示音：有人进出、开局、收到别人的聊天（聊天只留最近几条，按最后一条的 id 数新消息）
   const lastChat = room ? room.chat[room.chat.length - 1] : undefined;
   const chatSeen = useRef<{ id: string | undefined; count: number }>({ id: undefined, count: 0 });
