@@ -9,7 +9,22 @@
 .kd-screen small, .app-shell .gm-panel.kd-final small, .app-shell .gm-panel.kd-rules small { font-size: 12px; font-weight: 400; }
 .kd-screen img { image-rendering: pixelated; }
 
-.kd-panel, .kd-final, .kd-hero, .cc-map {
+/* ---------- 全屏背景 ---------- */
+.kd-backdrop { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #2e2319; }
+.kd-backdrop-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100vw, calc(100vh * 16 / 9));
+  height: max(100vh, calc(100vw * 9 / 16));
+  transform: translate(-50%, -50%);
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+.kd-backdrop-veil { position: absolute; inset: 0; background: #0c0907; opacity: 0.4; }
+.app-shell.kd-home > :not(.kd-backdrop):not(.gm-modal-backdrop), .app-shell.kd-room > :not(.kd-backdrop):not(.gm-modal-backdrop), .app-shell.kd-game > :not(.kd-backdrop):not(.gm-modal-backdrop) { position: relative; z-index: 1; }
+
+.kd-panel, .kd-final, .kd-hero, .cc-map, .kd-home .welcome-copy, .kd-home .online-rooms, .kd-room .room-heading, .kd-room .room-feedback {
   box-shadow:
     0 calc(var(--px) * -1) 0 0 var(--edge),
     0 var(--px) 0 0 var(--edge),
@@ -153,10 +168,10 @@
 
 .app-shell.kd-home { width: min(1200px, calc(100% - 48px)); }
 .kd-home .welcome-grid { grid-template-columns: minmax(512px, 1fr) 420px; grid-template-rows: minmax(0, 1fr); align-items: center; gap: 48px; padding: 24px 0; }
-.kd-home .welcome-copy { padding: 0; }
+.kd-home .welcome-copy { --rim: #6a4f37; box-sizing: border-box; max-height: 100%; padding: 20px 24px; overflow: hidden; background: var(--panel); }
 .kd-home-side { display: flex; max-height: 100%; min-width: 0; min-height: 0; flex-direction: column; gap: 16px; }
 .kd-home-side .entry-card { flex: 0 0 auto; }
-.app-shell.kd-home .online-rooms { display: flex; min-height: 0; flex: 0 1 auto; flex-direction: column; margin: 0; padding: 0; border-top: 0; }
+.app-shell.kd-home .online-rooms { --rim: #6a4f37; display: flex; min-height: 0; flex: 0 1 auto; flex-direction: column; margin: 0; padding: 14px 16px; border-top: 0; background: var(--panel); }
 .app-shell.kd-home .online-rooms > * { flex: 0 0 auto; }
 .app-shell.kd-home .online-rooms-heading { margin-bottom: 8px; }
 .app-shell.kd-home .online-rooms-heading h2 { margin-top: 2px; }
@@ -206,7 +221,7 @@
 /* ---------- 等候房间：一屏放下 ---------- */
 .app-shell.kd-room { width: min(1440px, calc(100% - 48px)); }
 .kd-room .room-layout { display: flex; width: 100%; min-height: 0; flex-direction: column; padding: 24px 0 16px; }
-.kd-room .room-heading { margin-bottom: 20px; }
+.kd-room .room-heading { --rim: #6a4f37; margin-bottom: 20px; padding: 12px 16px; background: var(--panel); }
 .kd-room .room-heading h1 { margin-top: 8px; }
 .kd-room .room-grid { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .kd-room .player-details strong { font-size: 24px; line-height: 1.25; }
@@ -219,7 +234,7 @@
 .kd-room-chat { display: flex; min-height: 0; align-self: stretch; }
 .app-shell.kd-room .room-chat { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; margin: 0; }
 .app-shell.kd-room .room-chat-list { flex: 1 1 auto; height: auto; min-height: 120px; }
-.kd-room .room-feedback { margin: 12px 0 0; }
+.kd-room .room-feedback { --rim: #6a4f37; width: fit-content; max-width: 100%; margin: 12px auto 0; padding: 4px 12px; background: var(--panel); }
 .kd-room .room-secure-note { display: none; }
 .kd-options { display: grid; gap: 8px; margin-top: 16px; }
 .app-shell .kd-options .room-setting { justify-content: flex-start; padding: 8px 10px; text-align: left; }

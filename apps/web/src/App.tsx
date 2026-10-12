@@ -255,6 +255,7 @@ function App() {
   if (tutorialOpen && room?.status !== "playing") {
     return (
       <main data-gc-table className="app-shell kd-game">
+        <CarcassonneBackdrop theme={theme} />
         <TutorialMode name={name} brand={<Brand />} themeToggle={themeToggle} theme={theme} waitingRoom={room?.code} onExit={closeTutorial} />
         {confirmDialog}
       </main>
@@ -266,6 +267,7 @@ function App() {
     const watched = players.some((player) => player.id === watchId) ? watchId : players[0]!.id;
     return (
       <main data-gc-table className="app-shell kd-game">
+        <CarcassonneBackdrop theme={theme} />
         <GameBoard
           room={room}
           busy={busy}
@@ -292,6 +294,7 @@ function App() {
   if (room) {
     return (
       <main className="app-shell kd-room">
+        <CarcassonneBackdrop theme={theme} />
         <header className="topbar">
           <Brand />
           <div className="topbar-right">
@@ -321,6 +324,7 @@ function App() {
 
   return (
     <main className="app-shell kd-home">
+      <CarcassonneBackdrop theme={theme} />
       <header className="topbar">
         <Brand />
         <div className="topbar-right">
@@ -458,6 +462,15 @@ const HERO_TILES: { r: number; c: number; t: string; rot: number }[] = [
   { r: 1, c: 0, t: "U", rot: 1 }, { r: 1, c: 1, t: "K", rot: 0 }, { r: 1, c: 2, t: "N", rot: 1 }, { r: 1, c: 3, t: "D", rot: 3 },
   { r: 2, c: 0, t: "B", rot: 1 }, { r: 2, c: 1, t: "D", rot: 1 }, { r: 2, c: 2, t: "F", rot: 0 }, { r: 2, c: 3, t: "D", rot: 3 },
 ];
+
+function CarcassonneBackdrop({ theme }: { theme: "day" | "night" }) {
+  return (
+    <div className="kd-backdrop" aria-hidden="true">
+      <div className="kd-backdrop-art" style={{ backgroundImage: `url(${theme === "day" ? art.tableDay : art.tableNight})` }} />
+      <div className="kd-backdrop-veil" />
+    </div>
+  );
+}
 
 function Hero() {
   const [theme] = useTheme();
